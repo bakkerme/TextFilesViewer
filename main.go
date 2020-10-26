@@ -49,6 +49,7 @@ func exit() {
 	app.Stop()
 }
 
+var textPage Page
 func main() {
 	InitLogger();
 
@@ -61,7 +62,9 @@ func main() {
 	pages = tview.NewPages()
 
 	createMainPage(index)
-	createTextPage()
+
+	textPage = &PageText{}
+	textPage.SetupPage()
 
 	pageMainLoad()
 

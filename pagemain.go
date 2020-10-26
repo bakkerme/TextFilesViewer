@@ -48,7 +48,7 @@ func hasSelectedItem(index int, mainText string, secondaryText string, shortcut 
 	case "directory":
 		pageIndexLoad(selectedItem.File)
 	case "file":
-		pageTextViewLoad(&selectedItem)
+		textPage.ShowPage(&selectedItem)
 	}
 }
 
