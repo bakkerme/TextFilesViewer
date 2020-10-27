@@ -21,6 +21,8 @@ const PAGE_TEXT= "TEXT"
 var app *tview.Application
 var pages *tview.Pages
 
+
+var listDirs []string
 func getCurrentDirPath () (string) {
 	tempPath := ""
 	for _, value := range listDirs {
@@ -50,10 +52,9 @@ func exit() {
 }
 
 var textPage Page
+var mainPage Page
 func main() {
 	InitLogger();
-
-	index := loadIndex("./assets/index.json")
 
 	tview.Styles.PrimaryTextColor = tcell.ColorGreen
 	tview.Styles.TertiaryTextColor = tcell.ColorWhite
@@ -61,12 +62,14 @@ func main() {
 	app = tview.NewApplication()
 	pages = tview.NewPages()
 
-	createMainPage(index)
-
 	textPage = &PageText{}
 	textPage.SetupPage()
 
-	pageMainLoad()
+	currentIndex := loadIndex("./assets/index.json")
+	mainPage = &PageMain{}
+	mainPage.SetupPage()
+	mainPage.SetPageData(currentIndex)
+	mainPage.ShowPage()
 
 	if err := app.SetRoot(pages, true).SetFocus(pages).Run(); err != nil {
 		panic(err)

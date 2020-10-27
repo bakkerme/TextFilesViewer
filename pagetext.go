@@ -8,6 +8,7 @@ import (
 
 type PageText struct {
 	textView *tview.TextView
+	textContent string
 }
 
 func (page *PageText) loadTextFile(filePath string) (string) {
@@ -21,22 +22,20 @@ func (page *PageText) loadTextFile(filePath string) (string) {
 
 func (page *PageText) textViewInputHandler(key *tcell.EventKey) *tcell.EventKey {
 	if(key.Key() == tcell.KeyCtrlLeftSq) { // Got escape, jump back through the stack
-		pageMainLoad()
+		mainPage.ShowPage()
 	}
 
 	return key
 }
 
-func (page *PageText) ShowPage(textFile *IndexItem) {
+func (page *PageText) SetPageData(textFiles *[]IndexItem) {
+	textFile := (*textFiles)[0]
 	LogOut.Printf("load text file %s", textFile.File)
+	page.textContent = page.loadTextFile(getCurrentDirPath() + textFile.File)
+	page.textView.SetText(page.textContent)
+}
 
-	textContent := page.loadTextFile(getCurrentDirPath() + textFile.File)
-
-	// LogOut.Printf("text content %s", textContent)
-	LogOut.Printf("text view %p", &page.textView)
-
-	page.textView.SetText(textContent)
-
+func (page *PageText) ShowPage() {
 	pages.SwitchToPage(PAGE_TEXT)
 }
 

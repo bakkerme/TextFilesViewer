@@ -1,6 +1,7 @@
 package main
 
 type Page interface {
-	ShowPage(*IndexItem)
+	ShowPage()
 	SetupPage()
+	SetPageData(*[]IndexItem)
 }

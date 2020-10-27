@@ -5,16 +5,15 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-var categoriesGlobal *[]IndexItem
+type PageMain struct {
+	mainList *tview.List
+	currentIndex *[]IndexItem
 
-var mainList *tview.List
-var currentIndex *[]IndexItem
+	listIndexes []int
+}
 
-var listIndexes []int
-var listDirs []string
-
-func pageIndexLoad(file string) {
-	mainList.Clear()
+func (page *PageMain) pageIndexLoad(file string) {
+	page.mainList.Clear()
 	LogOut.Printf("load category %s", file)
 
 	currDir := getCurrentDirPath()
@@ -23,7 +22,7 @@ func pageIndexLoad(file string) {
 	LogOut.Printf("load category file %s", categoryIndexPath)
 	var index = loadIndex(categoryIndexPath)
 
-	currentIndex = index
+	page.currentIndex = index
 
 	// Switch current dir to whatever this is
 	currDir = categoryDirPath
@@ -32,27 +31,30 @@ func pageIndexLoad(file string) {
 	LogOut.Printf("Dir stack is %v", listDirs)
 
 	for _, v := range *index {
-		mainList.AddItem(v.File, v.Description, 0, nil)
+		page.mainList.AddItem(v.File, v.Description, 0, nil)
 	}
 }
 
-func hasSelectedItem(index int, mainText string, secondaryText string, shortcut rune) {
+func (page *PageMain) hasSelectedItem(index int, mainText string, secondaryText string, shortcut rune) {
 	LogOut.Printf("selected %d %s - %s", index, mainText, secondaryText)
 
-	listIndexes = append(listIndexes, index)
+	page.listIndexes = append(page.listIndexes, index)
 
-	LogOut.Printf("Pusing index %d, state is %v", index, listIndexes)
+	LogOut.Printf("Pusing index %d, state is %v", index, page.listIndexes)
 
-	selectedItem := (*currentIndex)[index]
+	selectedItem := (*page.currentIndex)[index]
 	switch selectedItem.Type {
 	case "directory":
-		pageIndexLoad(selectedItem.File)
+		page.pageIndexLoad(selectedItem.File)
 	case "file":
-		textPage.ShowPage(&selectedItem)
+		var items []IndexItem
+		items = append(items, selectedItem)
+		textPage.SetPageData(&items)
+		textPage.ShowPage()
 	}
 }
 
-func listInputHandler(key *tcell.EventKey) *tcell.EventKey {
+func (page *PageMain) listInputHandler(key *tcell.EventKey) *tcell.EventKey {
 	// LogOut.Printf("key is %d", key.Key())
 	if(key.Key() == tcell.KeyCtrlLeftSq) { // Got escape, jump back through the stack
 		if(len(listDirs) > 1) {
@@ -70,7 +72,7 @@ func listInputHandler(key *tcell.EventKey) *tcell.EventKey {
 
 			LogOut.Printf("Dir stack is %v", listDirs)
 
-			pageIndexLoad(indexToLoad)
+			page.pageIndexLoad(indexToLoad)
 		} else {
 			exit();
 		}
@@ -79,25 +81,25 @@ func listInputHandler(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func pageMainLoad() {
+func (page *PageMain) SetPageData(textFiles *[]IndexItem) {
+	page.currentIndex = textFiles
+
+	for _, v := range *page.currentIndex {
+		page.mainList.AddItem(v.File, v.Description, 0, nil)
+	}
+}
+
+func (page *PageMain) ShowPage() {
 	pages.SwitchToPage(PAGE_MAIN)
 }
 
-func createMainPage(categories *[]IndexItem) {
-	currentIndex = categories
-
-	listIndexes = make([]int, 0)
+func (page *PageMain) SetupPage() {
+	page.listIndexes = make([]int, 0)
 	listDirs = append(listDirs, "./assets/")
 
-	mainList = tview.NewList()
-	mainList.SetSelectedFunc(hasSelectedItem)
-	mainList.SetInputCapture(listInputHandler)
+	page.mainList = tview.NewList()
+	page.mainList.SetSelectedFunc(page.hasSelectedItem)
+	page.mainList.SetInputCapture(page.listInputHandler)
 
-	categoriesGlobal = categories
-
-	for _, v := range *categories {
-		mainList.AddItem(v.File, v.Description, 0, nil)
-	}
-
-	pages.AddPage(PAGE_MAIN, mainList, true, true)
+	pages.AddPage(PAGE_MAIN, page.mainList, true, true)
 }
