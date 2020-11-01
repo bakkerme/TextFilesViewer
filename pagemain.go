@@ -12,24 +12,45 @@ type PageMain struct {
 	listIndexes []int
 }
 
-func (page *PageMain) pageIndexLoad(file string) {
+func (page *PageMain) loadPageIndex(file string) {
 	page.mainList.Clear()
 	LogOut.Printf("load category %s", file)
 
-	currDir := getCurrentDirPath()
-	var categoryDirPath = currDir + file;
-	var categoryIndexPath =  categoryDirPath + "index.json"
+	// Switch current dir to whatever this is
+	dirStack.pushToWorkingDirStack(file)
+
+	currDir := dirStack.getCurrentDirPath()
+	LogOut.Printf("current dir is %s", currDir)
+
+	var categoryIndexPath = currDir + "index.json"
 	LogOut.Printf("load category file %s", categoryIndexPath)
-	var index = loadIndex(categoryIndexPath)
+	index, err := loadIndex(categoryIndexPath)
+
+	if err != nil {
+		LogOut.Printf("Could not load page index %s", categoryIndexPath)
+		LogOut.Println(err)
+		exit()
+		return
+	}
 
 	page.currentIndex = index
 
-	// Switch current dir to whatever this is
-	currDir = categoryDirPath
-	listDirs = append(listDirs, file)
+	for _, v := range *index {
+		page.mainList.AddItem(v.File, v.Description, 0, nil)
+	}
+}
 
-	LogOut.Printf("Dir stack is %v", listDirs)
+func (page *PageMain) loadMainIndex() {
+	index, err := loadIndex("index.json")
 
+	if err != nil {
+		LogOut.Printf("Could not load main index /assets/index.json")
+		LogOut.Println(err)
+		exit()
+		return
+	}
+
+	page.mainList.Clear()
 	for _, v := range *index {
 		page.mainList.AddItem(v.File, v.Description, 0, nil)
 	}
@@ -40,12 +61,12 @@ func (page *PageMain) hasSelectedItem(index int, mainText string, secondaryText 
 
 	page.listIndexes = append(page.listIndexes, index)
 
-	LogOut.Printf("Pusing index %d, state is %v", index, page.listIndexes)
+	LogOut.Printf("Pushing index %d, state is %v", index, page.listIndexes)
 
 	selectedItem := (*page.currentIndex)[index]
 	switch selectedItem.Type {
 	case "directory":
-		page.pageIndexLoad(selectedItem.File)
+		page.loadPageIndex(selectedItem.File)
 	case "file":
 		var items []IndexItem
 		items = append(items, selectedItem)
@@ -55,27 +76,25 @@ func (page *PageMain) hasSelectedItem(index int, mainText string, secondaryText 
 }
 
 func (page *PageMain) listInputHandler(key *tcell.EventKey) *tcell.EventKey {
-	// LogOut.Printf("key is %d", key.Key())
 	if(key.Key() == tcell.KeyCtrlLeftSq) { // Got escape, jump back through the stack
-		if(len(listDirs) > 1) {
-			LogOut.Println("Got Escape on list")
-			LogOut.Printf("Dir stack was %v", listDirs)
+		LogOut.Println("Got Escape on list")
 
-			listDirs[len(listDirs)-1] = ""
-			listDirs = listDirs[:len(listDirs)-1]
+		_, err := dirStack.popFromWorkingDirStack()
 
-			indexToLoad := listDirs[len(listDirs) - 1]
-
-			// Pop a second time, since we are reloading this item
-			listDirs[len(listDirs)-1] = ""
-			listDirs = listDirs[:len(listDirs)-1]
-
-			LogOut.Printf("Dir stack is %v", listDirs)
-
-			page.pageIndexLoad(indexToLoad)
-		} else {
+		// If we are at the end of the stack, the user is hitting
+		// Esc on the list page, so they want to quit 
+		if err == ErrEndOfStack {
 			exit();
+			return key
 		}
+
+		indexToLoad, err := dirStack.getFinalDirEntry()
+		if( err == ErrEndOfStack) {
+			page.loadMainIndex()
+			return key
+		}
+
+		page.loadPageIndex(indexToLoad)
 	}
 
 	return key
@@ -95,7 +114,6 @@ func (page *PageMain) ShowPage() {
 
 func (page *PageMain) SetupPage() {
 	page.listIndexes = make([]int, 0)
-	listDirs = append(listDirs, "./assets/")
 
 	page.mainList = tview.NewList()
 	page.mainList.SetSelectedFunc(page.hasSelectedItem)

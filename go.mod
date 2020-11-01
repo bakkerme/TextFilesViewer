@@ -1,4 +1,4 @@
-module gitlab.com/hyperfocus.systems/text-files-viewer
+module hyperfocus.systems/text-files-viewer
 
 go 1.15
 

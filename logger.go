@@ -14,5 +14,4 @@ func InitLogger() {
 	}
 
 	LogOut = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	LogOut.Println("test")
 }

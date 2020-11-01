@@ -3,21 +3,11 @@ package main
 import (
 	"github.com/rivo/tview"
 	"github.com/gdamore/tcell"
-	"io/ioutil"
 )
 
 type PageText struct {
 	textView *tview.TextView
 	textContent string
-}
-
-func (page *PageText) loadTextFile(filePath string) (string) {
-	textContent, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		LogOut.Println(err)
-	}
-
-	return string(textContent)
 }
 
 func (page *PageText) textViewInputHandler(key *tcell.EventKey) *tcell.EventKey {
@@ -31,7 +21,7 @@ func (page *PageText) textViewInputHandler(key *tcell.EventKey) *tcell.EventKey 
 func (page *PageText) SetPageData(textFiles *[]IndexItem) {
 	textFile := (*textFiles)[0]
 	LogOut.Printf("load text file %s", textFile.File)
-	page.textContent = page.loadTextFile(getCurrentDirPath() + textFile.File)
+	page.textContent = loadTextFile(dirStack.getCurrentDirPath() + textFile.File)
 	page.textView.SetText(page.textContent)
 }
 

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
-	"encoding/json"
-
+	"fmt"
 	"github.com/rivo/tview"
 	"github.com/gdamore/tcell"
 )
@@ -21,35 +19,11 @@ const PAGE_TEXT= "TEXT"
 var app *tview.Application
 var pages *tview.Pages
 
-
-var listDirs []string
-func getCurrentDirPath () (string) {
-	tempPath := ""
-	for _, value := range listDirs {
-		tempPath += value
-	}
-
-	return tempPath
-}
-
-func loadIndex(filePath string) (*[]IndexItem) {
-	indexJSON, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		LogOut.Println(err)
-	}
-
-	var index []IndexItem
-	marshalErr := json.Unmarshal([]byte(indexJSON), &index)
-	if marshalErr != nil {
-		LogOut.Println(marshalErr)
-	}
-
-	return &index
-}
-
 func exit() {
 	app.Stop()
 }
+
+var dirStack DirStack
 
 var textPage Page
 var mainPage Page
@@ -59,13 +33,24 @@ func main() {
 	tview.Styles.PrimaryTextColor = tcell.ColorGreen
 	tview.Styles.TertiaryTextColor = tcell.ColorWhite
 
+	dirStack = DirStack{}
+
 	app = tview.NewApplication()
 	pages = tview.NewPages()
 
 	textPage = &PageText{}
 	textPage.SetupPage()
 
-	currentIndex := loadIndex("./assets/index.json")
+	currentIndex, err := loadIndex("index.json")
+	if err != nil {
+		fmt.Println("Could not load base page index, './assets/index.json'")
+		fmt.Println(err)
+
+		fmt.Println("Could not load base page index, './assets/index.json'")
+		LogOut.Println(err)
+		exit()
+	}
+
 	mainPage = &PageMain{}
 	mainPage.SetupPage()
 	mainPage.SetPageData(currentIndex)
